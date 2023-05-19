@@ -230,7 +230,9 @@ noname                   : Other/Uncategorized
 .tif                     : Media/Images
 .tiff                    : Media/Images
 .art                     : Media/Images
+.arw                     : Media/Images
 .blp                     : Media/Images
+.dng                     : Media/Images
 .bti                     : Media/Images
 .cd5                     : Media/Images
 .cit                     : Media/Images

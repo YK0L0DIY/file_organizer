@@ -5,10 +5,21 @@ from datetime import datetime
 import extensiondict
 
 
+def concat_folder_with_file(folder: str, file_name: str):
+    if folder.endswith('/'):
+        return folder + file_name
+    else:
+        return folder + '/' + file_name
+
+
 def execute(source: str, output: str, delete_sub_folder: bool = False):
     for filename in os.listdir(source):
 
-        path = source + filename
+        path = concat_folder_with_file(source, filename)
+
+        if filename.startswith('.') or filename.startswith('".'):
+            print(f"Ignoring file: {path}")
+            continue
 
         if os.path.isdir(path):
             folder_path = path + '/'
@@ -23,7 +34,7 @@ def execute(source: str, output: str, delete_sub_folder: bool = False):
             try:
                 dest = output + extensiondict.extension_dict[extension.lower()]
 
-                file_date = os.path.getctime(source + filename)
+                file_date = os.path.getmtime(path)
                 year = datetime.fromtimestamp(int(file_date)).strftime("%Y")
                 month = datetime.fromtimestamp(int(file_date)).strftime("%m")
                 day = datetime.fromtimestamp(int(file_date)).strftime("%d")
@@ -35,16 +46,19 @@ def execute(source: str, output: str, delete_sub_folder: bool = False):
                 if not final_path_exists:
                     os.makedirs(dest)
 
-                stripped_filename = filename.replace(" ", "\\ ").replace("'", "\\" + "\'")
+                if " " in filename:
+                    filename = f'"{filename}"'
+                else:
+                    filename = filename
 
-                file_exists_in_dest = os.path.isfile(dest + '/' + filename)
+                file_exists_in_dest = os.path.isfile(concat_folder_with_file(dest, filename))
 
-                filepath = source + stripped_filename
+                filepath = concat_folder_with_file(source, filename)
 
-                file_exists_in_src = os.path.isfile(source + filename)
+                file_exists_in_src = os.path.isfile(filepath)
 
                 if file_exists_in_dest:
-                    print(filename + ' was not transferred from ' + source + ' to ', dest)
+                    move_with_new_name_if_exist(filename, source, dest)
 
                 else:
                     if file_exists_in_src and not file_exists_in_dest:
@@ -54,6 +68,24 @@ def execute(source: str, output: str, delete_sub_folder: bool = False):
                 print(f"Unknown extension: {extension.lower()}")
 
 
+def move_with_new_name_if_exist(filename, source, dest):
+    original_file_name = filename
+    file_exists_in_dest = os.path.isfile(concat_folder_with_file(dest, filename))
+
+    count = 1
+    while file_exists_in_dest:
+        if filename.startswith('"'):
+            filename.replace('"', '')
+            filename = str(count) + f'_{filename}'
+            filename = f'"{filename}"'
+        else:
+            filename = f"{count}_{filename}"
+
+        file_exists_in_dest = os.path.isfile(concat_folder_with_file(dest, filename))
+
+    movefile(concat_folder_with_file(source, original_file_name), concat_folder_with_file(dest, filename))
+
+
 # movefile is the function that handles moving of files from source to destination folder
 def movefile(src, dst):
     os.system('mv ' + src + ' ' + dst)
@@ -61,7 +93,8 @@ def movefile(src, dst):
 
 # movefile is the function that handles moving of files from source to destination folder
 def delete_folder(src):
-    os.system('rm -r ' + src)
+    if not os.listdir(src):
+        os.system('rm -r ' + src)
 
 
 if __name__ == "__main__":
